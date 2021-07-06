@@ -40,7 +40,7 @@ export interface LanguageService {
 	findDocumentLinks(document: TextDocument, documentContext: DocumentContext): DocumentLink[];
 	findDocumentSymbols(document: TextDocument, htmlDocument: HTMLDocument): SymbolInformation[];
 	doTagComplete(document: TextDocument, position: Position, htmlDocument: HTMLDocument): string | null;
-	getFoldingRanges(document: TextDocument, context?: { rangeLimit?: number }): FoldingRange[];
+	getFoldingRanges(document: TextDocument, context?: { rangeLimit?: number, compact?: boolean }): FoldingRange[];
 	getSelectionRanges(document: TextDocument, positions: Position[]): SelectionRange[];
 	doRename(document: TextDocument, position: Position, newName: string, htmlDocument: HTMLDocument): WorkspaceEdit | null;
 	findMatchingTagPosition(document: TextDocument, position: Position, htmlDocument: HTMLDocument): Position | null;

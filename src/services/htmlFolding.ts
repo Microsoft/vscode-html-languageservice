@@ -80,7 +80,7 @@ function limitRanges(ranges: FoldingRange[], rangeLimit: number) {
 	return result;
 }
 
-export function getFoldingRanges(document: TextDocument, context: { rangeLimit?: number }): FoldingRange[] {
+export function getFoldingRanges(document: TextDocument, context: { rangeLimit?: number, compact?: boolean }): FoldingRange[] {
 	const scanner = createScanner(document.getText());
 	let token = scanner.scan();
 	const ranges: FoldingRange[] = [];
@@ -122,7 +122,7 @@ export function getFoldingRanges(document: TextDocument, context: { rangeLimit?:
 					stack.length = i;
 					const line = document.positionAt(scanner.getTokenOffset()).line;
 					const startLine = stackElement.startLine;
-					const endLine = line - 1;
+					const endLine = context.compact ? line : line - 1;
 					if (endLine > startLine && prevStart !== startLine) {
 						addRange({ startLine, endLine });
 					}

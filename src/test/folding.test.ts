@@ -15,13 +15,21 @@ interface ExpectedIndentRange {
 	kind?: string;
 }
 
-function assertRanges(lines: string[], expected: ExpectedIndentRange[], message?: string, nRanges?: number): void {
+interface AssertConfig {
+	message?: string,
+	nRanges?: number,
+	compact?: boolean,
+}
+
+
+function assertRanges(lines: string[], expected: ExpectedIndentRange[], config?: AssertConfig): void {
+	const { message, nRanges, compact } = config || {};
 	const document = TextDocument.create('test://foo/bar.json', 'json', 1, lines.join('\n'));
 	const workspace = {
 		settings: {},
 		folders: [{ name: 'foo', uri: 'test://foo' }]
 	};
-	const actual = getFoldingRanges(document, { rangeLimit: nRanges });
+	const actual = getFoldingRanges(document, { rangeLimit: nRanges, compact: compact });
 
 	let actualRanges = [];
 	for (let i = 0; i < actual.length; i++) {
@@ -54,6 +62,7 @@ suite('HTML Folding', () => {
 			/*4*/'</html>'
 		];
 		assertRanges(input, [r(0, 3), r(1, 2)]);
+		assertRanges(input, [r(0, 4), r(1, 3)], { compact: true });
 	});
 
 	test('Fold siblings', () => {
@@ -68,6 +77,7 @@ suite('HTML Folding', () => {
 			/*7*/'</html>'
 		];
 		assertRanges(input, [r(0, 6), r(1, 2), r(4, 5)]);
+		assertRanges(input, [r(0, 7), r(1, 3), r(4, 6)], { compact: true });
 	});
 
 	test('Fold self-closing tags', () => {
@@ -83,6 +93,7 @@ suite('HTML Folding', () => {
 			/*8*/'</div>'
 		];
 		assertRanges(input, [r(0, 7), r(5, 6)]);
+		assertRanges(input, [r(0, 8), r(5, 7)], { compact: true });
 	});
 
 	test('Fold comment', () => {
@@ -94,6 +105,7 @@ suite('HTML Folding', () => {
 			/*4*/' some more stuff -->',
 		];
 		assertRanges(input, [r(0, 2, 'comment'), r(3, 4, 'comment')]);
+		assertRanges(input, [r(0, 2, 'comment'), r(3, 4, 'comment')], { compact: true });
 	});
 
 	test('Fold regions', () => {
@@ -104,6 +116,7 @@ suite('HTML Folding', () => {
 			/*3*/'<!-- #endregion -->',
 		];
 		assertRanges(input, [r(0, 3, 'region'), r(1, 2, 'region')]);
+		assertRanges(input, [r(0, 3, 'region'), r(1, 2, 'region')], { compact: true });
 	});
 
 
@@ -117,6 +130,7 @@ suite('HTML Folding', () => {
 			/*4*/'</body>',
 		];
 		assertRanges(input, [r(0, 3)]);
+		assertRanges(input, [r(0, 4)], { compact: true });
 	});
 
 	test('Fold incomplete 2', () => {
@@ -126,6 +140,7 @@ suite('HTML Folding', () => {
 			/*2*/'</div>',
 		];
 		assertRanges(input, [r(0, 1)]);
+		assertRanges(input, [r(0, 2)], { compact: true });
 	});
 
 	test('Fold intersecting region', () => {
@@ -138,6 +153,7 @@ suite('HTML Folding', () => {
 			/*5*/'<!-- #endregion -->',
 		];
 		assertRanges(input, [r(0, 3)]);
+		assertRanges(input, [r(0, 4)], { compact: true });
 	});
 
 	test('Fold intersecting region 2', () => {
@@ -150,6 +166,7 @@ suite('HTML Folding', () => {
 			/*5*/'</body>',
 		];
 		assertRanges(input, [r(0, 3, 'region')]);
+		assertRanges(input, [r(0, 3, 'region')], { compact: true });
 	});
 
 	test('Test limit', () => {
@@ -176,15 +193,60 @@ suite('HTML Folding', () => {
 			/*19*/' </span>',
 			/*20*/'</div>',
 		];
-		assertRanges(input, [r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(6, 7), r(9, 10), r(13, 14), r(16, 17)], 'no limit', void 0);
-		assertRanges(input, [r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(6, 7), r(9, 10), r(13, 14), r(16, 17)], 'limit 8', 8);
-		assertRanges(input, [r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(6, 7), r(13, 14), r(16, 17)], 'limit 7', 7);
-		assertRanges(input, [r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(13, 14), r(16, 17)], 'limit 6', 6);
-		assertRanges(input, [r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(13, 14)], 'limit 5', 5);
-		assertRanges(input, [r(0, 19), r(1, 18), r(2, 3), r(5, 11)], 'limit 4', 4);
-		assertRanges(input, [r(0, 19), r(1, 18), r(2, 3)], 'limit 3', 3);
-		assertRanges(input, [r(0, 19), r(1, 18)], 'limit 2', 2);
-		assertRanges(input, [r(0, 19)], 'limit 1', 1);
+		// function _assertRanges(expected: ExpectedIndentRange[], config: AssertConfig) {
+		// 	assertRanges(input, expected, { ...config });
+		// 	const expectedCompact = expected.map(e => r(e.startLine, e.endLine));
+		// 	assertRanges(input, expectedCompact, { ...config, compact: true });
+		// }
+		assertRanges(
+			input,
+			[r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(6, 7), r(9, 10), r(13, 14), r(16, 17)],
+			{ message: 'no limit', nRanges: void 0 }
+		);
+		assertRanges(
+			input,
+			[r(0, 20), r(1, 19), r(2, 4), r(5, 12), r(6, 8), r(9, 11), r(13, 15), r(16, 18)],
+			{ message: 'no limit', nRanges: void 0, compact: true }
+		);
+		assertRanges(
+			input,
+			[r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(6, 7), r(9, 10), r(13, 14), r(16, 17)],
+			{ message: 'limit 8', nRanges: 8 }
+		);
+		assertRanges(input,
+			[r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(6, 7), r(13, 14), r(16, 17)],
+			{ message: 'limit 7', nRanges: 7 }
+		);
+		assertRanges(
+			input,
+			[r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(13, 14), r(16, 17)],
+			{ message: 'limit 6', nRanges: 6 }
+		);
+		assertRanges(
+			input,
+			[r(0, 19), r(1, 18), r(2, 3), r(5, 11), r(13, 14)],
+			{ message: 'limit 5', nRanges: 5 }
+		);
+		assertRanges(
+			input,
+			[r(0, 19), r(1, 18), r(2, 3), r(5, 11)],
+			{ message: 'limit 4', nRanges: 4 }
+		);
+		assertRanges(
+			input,
+			[r(0, 19), r(1, 18), r(2, 3)],
+			{ message: 'limit 3', nRanges: 3 }
+		);
+		assertRanges(
+			input,
+			[r(0, 19), r(1, 18)],
+			{ message: 'limit 2', nRanges: 2 }
+		);
+		assertRanges(
+			input,
+			[r(0, 19)],
+			{ message: 'limit 1', nRanges: 1 }
+		);
 	});
 
 });
